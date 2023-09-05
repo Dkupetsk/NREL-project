@@ -72,18 +72,18 @@ net.apply_output_transform(zero_ic)
 
 model = dde.Model(data, net)
 model.compile("adam", lr=0.0005)
-losshistory, train_state = model.train(epochs=100)
+losshistory, train_state = model.train(epochs=17000)
 
 dde.utils.plot_loss_history(losshistory)
 
 
 # %%
 #Get x(t) out of the DeepONet and take its derivative twice in the output using finite difference.
-#To do: get the derivatives with respect to the model itself
+#To do: get the derivatives with respect to the model itself.
 b = 2
 c = 3
 
-v = np.sin(np.pi * eval_pts).T
+v = 3*np.sin(2*np.pi * eval_pts).T
 x = np.linspace(0, 1, num=50)
 u = np.ravel(model.predict((v, x[:, None])))
 def finitediff(u,t):
@@ -95,10 +95,14 @@ def finitediff(u,t):
 udd = finitediff(finitediff(u,x),x)
 ud = finitediff(u,x)
 
-Ftrue = np.sin(np.pi*x)
+Ftrue = 3*np.sin(2*np.pi*x)
 plt.plot(x,Ftrue,'k')
 Fpred = udd[0:47] + b*ud[0:47] + c*u[0:47]
 plt.plot(x[0:47],Fpred,'r')
+plt.ylabel('F(t)')
+plt.xlabel('t')
+
+plt.savefig('comparison_x_to_f.png')
 
 
 #%%
