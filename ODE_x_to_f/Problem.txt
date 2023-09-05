@@ -1,0 +1,2 @@
+So far, the DeepXDE library seems to have a problem with taking in input x(t) and
+taking its Jacobian or Hessian. Error: IndexError: tuple index out of range.
