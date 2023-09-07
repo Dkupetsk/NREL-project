@@ -124,13 +124,15 @@ net = dde.nn.deeponet.DeepONetCartesianProd(
     [dim_t,32,32],
     'tanh',
     'Glorot normal',
-    regularization='dropout'
 )
+
+
+
 
 
 model = dde.Model(data, net)
 
-model.compile("adam", lr=1e-4)
+model.compile("adam", lr=1e-4,)
 losshistory, train_state = model.train(iterations=200000)
 
 

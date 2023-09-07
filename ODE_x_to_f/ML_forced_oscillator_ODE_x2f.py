@@ -25,22 +25,28 @@ else:
 dde.config.disable_xla_jit()
 
 # PDE
-geom = dde.geometry.TimeDomain(0, 1)
+td = dde.geometry.TimeDomain(0, 1)
+geom = dde.geometry.Interval(0,1)
 
+geomtime = dde.geometry.GeometryXTime(geom,td)
 
 b = 2
 c = 3
 
-def ode(t,F,y):
-    dxdt = dde.grad.jacobian(y,t)
-    ddxdt = dde.grad.hessian(y,t)
-    return -F/c + (1/c)*ddxdt + (b/c)*dxdt + y
+def getdiffy(y):
+    t, x = y[:,0:1], y[:,1:2]
+    xdot = dde.grad.jacobian(x,t)
+    xddot = dde.grad.hessian(x,t)
+    return xddot + b*xdot + c*x
+
+def ode(t,F,getdiffy):
+    return -F + getdiffy(t,x)
 
 
 
-ic = dde.icbc.IC(geom, lambda _: 0, lambda _, on_initial: on_initial,component=0)
 
-ode = dde.data.PDE(geom, ode, ic, num_domain=20, num_boundary=2, num_test=40)
+
+ode = dde.data.TimePDE(geomtime, ode, [], num_domain=2000, num_boundary=100, num_test=100,auxiliary_var_function=getdiffy)
 
 # Function space
 func_space = dde.data.GRF(length_scale=0.2,kernel='ExpSineSquared')
@@ -61,15 +67,15 @@ net = dde.nn.DeepONetCartesianProd(
 
 
 #Hard constraint zero IC
-def zero_ic(inputs, outputs):
-    return outputs * transpose(inputs[1], [1, 0])
+#def zero_ic(inputs, outputs):
+    #return outputs * transpose(inputs[1], [1, 0])
 
 
-net.apply_output_transform(zero_ic)
+#net.apply_output_transform(zero_ic)
 
 model = dde.Model(data, net)
 model.compile("adam", lr=0.0005)
-losshistory, train_state = model.train(epochs=10000)
+losshistory, train_state = model.train(epochs=10)
 
 dde.utils.plot_loss_history(losshistory)
 

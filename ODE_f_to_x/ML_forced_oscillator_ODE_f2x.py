@@ -56,8 +56,8 @@ data = dde.data.PDEOperatorCartesianProd(
 
 # Net
 net = dde.nn.DeepONetCartesianProd(
-    [50, 128, 128, 128],
-    [1, 128, 128, 128],
+    [50, 64, 64],
+    [1, 64, 64],
     "tanh",
     "Glorot normal",
 )
@@ -71,7 +71,7 @@ def zero_ic(inputs, outputs):
 net.apply_output_transform(zero_ic)
 
 model = dde.Model(data, net)
-model.compile("adam", lr=0.0005)
+model.compile("adam", lr=1)
 losshistory, train_state = model.train(epochs=17000)
 
 dde.utils.plot_loss_history(losshistory)
