@@ -159,7 +159,7 @@ plt.xlabel('t')
 plt.ylabel('x(t)')
 plt.show()
 fpredmax = np.ravel(model.predict(([sol*max(sol).astype(np.float32)],newt.astype(np.float32))))
-fmpred = max(np.abs(fpredmax))*2
+fmpred = max(np.abs(fpredmax))*2.5
 fpred = np.ravel(model.predict(([sol.astype(np.float32)],newt.astype(np.float32))))*fmpred
 plt.plot(t,ftrue,'k')
 plt.plot(t,fpred,'r')

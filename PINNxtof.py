@@ -19,7 +19,12 @@ def ode_system(t,y):
 def boundary(_, on_initial):
     return on_initial
 
+def neumannbounds(_, on_initial):
+    return on_initial
+
 ic = dde.icbc.IC(geom, lambda X: 0, boundary, component = 0)
+icn = dde.icbc.NeumannBC(geom, lambda X: 0, neumannbounds, component=0)
+
 #return here if issues
 
 #define f0,w (driving freq), w0 (natural frequency)
@@ -27,36 +32,52 @@ f0 = 5
 w = np.pi/2
 w0 = np.sqrt(k/m)
 
-tpoints = np.linspace(0,1,num=50)[:,None]
-xamp = (f0/m)/((w0**2 - w**2)**2 + (w**2)*(b/m)**2)
-xphase = (b/m)*w/(w0**2 - w**2)
-xpoints = xamp*np.cos(w*tpoints - xphase)
-#plt.plot(tpoints,xpoints)
+t = np.linspace(0,1,num=50)
+tpoints = t[:,None]
+
+def forcedosc(y,t,m,b,w,f0):
+    x, xi = y
+    dydt = [xi, -(b/m)*xi - (k/m)*x + f0*np.cos(w*t)/(f0*m)]
+    return(dydt)
+
+from scipy.integrate import odeint
+
+xpoints = odeint(forcedosc,[0,0],t,args=(m,b,w,f0))[:,0]
+xpoints = xpoints/max(xpoints)
+plt.plot(tpoints,xpoints)
+plt.plot(tpoints,f0*np.cos(w*t)/f0)
+
 # %%
 obs = dde.icbc.PointSetBC(tpoints,xpoints,component=0)
-
+obs2 = dde.icbc.PointSetBC(tpoints,np.cos(w*t)[:,None],component=1)
 data = dde.data.PDE(
     geom,
     ode_system,
-    [ic,obs],
-    num_domain = 400,
+    [ic,icn,obs,obs2],
+    num_domain = 200,
     num_boundary = 2,
-    anchors=tpoints
 )
 
 
 # %%
 
-net = dde.nn.FNN([1] + [40]*3 + [2], 'tanh', 'Glorot uniform')
+net = dde.nn.FNN([1] + [32]*3 + [2], 'tanh', 'Glorot uniform')
 
 model = dde.Model(data,net)
-model.compile('adam', lr=.0001)
-losshistory, train_state = model.train(epochs=60000)
+model.compile('adam', lr=.001)
+#model.train_step.optimizer_kwargs = {'options': {'maxfun': 1e5,'pgtol':1e-8, 'ftol': 1e-20, 'gtol': 1e-20, 'eps': 1e-20, 'iprint': -1, 'maxiter': 1e5}} 
+
+losshistory, train_state = model.train(epochs=30000)
+
 # %%
 
-pred = np.ravel(model.predict(tpoints))
-plt.plot(tpoints,pred[50:],'r')
+pred = model.predict(tpoints)[:,1]
+#%%
+plt.plot(tpoints,pred,'r')
 
-from scipy.integrate import odeint
-plt.plot(tpoints,f0*np.cos(w*tpoints),'k')
+
+Ftrue = f0*np.cos(w*t)/(10)
+    
+
+plt.plot(tpoints,f0*np.cos(w*t)/(f0),'k')
 # %%
