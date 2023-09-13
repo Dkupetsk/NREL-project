@@ -26,27 +26,51 @@ dde.config.disable_xla_jit()
 
 # PDE
 td = dde.geometry.TimeDomain(0, 1)
-geom = dde.geometry.Interval(0,1)
 
-geomtime = dde.geometry.GeometryXTime(geom,td)
 
 b = 2
 c = 3
-
-def getdiffy(y):
-    t, x = y[:,0:1], y[:,1:2]
-    xdot = dde.grad.jacobian(x,t)
-    xddot = dde.grad.hessian(x,t)
-    return xddot + b*xdot + c*x
-
-def ode(t,F,getdiffy):
-    return -F + getdiffy(t,x)
+from scipy.integrate import odeint
 
 
+def ode(t,y,auxiliary_var_function=None):
+    x, xd, F = y[:,0:1], y[:,1:2], y[:,2:3]
+    xd = dde.grad.jacobian(y,t,i=0)
+    xdd = dde.grad.hessian(y,t,component=0)
+    return xdd + b*xd + c*x - F
+
+#def psbc(y,F,t):
+    #def forcedosc(y,t):
+        #x1, x2 = y
+        #dydt = [x2, -b*x2 - c*x1 + F]
+        #return(dydt)
+    #sol = odeint(forcedosc,[0,0],t)[:,0]
+    #return(sol)
+
+
+t = np.linspace(0,1,num=50)
+newt = t[:,None]
+
+def forcedosc(y,t):
+    x1, x2 = y
+    dydt = [x2, -b*x2 - c*x1 + 3*np.cos(np.pi*t)]
+    return(dydt)
+
+
+xpoints = odeint(forcedosc,[0,0],t)
+x1points = xpoints[:,0]
+x2points = xpoints[:,1]
+
+Fpoints = 3*np.cos(np.pi*t)
 
 
 
-ode = dde.data.TimePDE(geomtime, ode, [], num_domain=2000, num_boundary=100, num_test=100,auxiliary_var_function=getdiffy)
+
+obs1 = dde.icbc.PointSetBC(newt,x1points,component=0)
+obs2 = dde.icbc.PointSetBC(newt,x2points,component=1)
+
+
+ode = dde.data.TimePDE(td, ode, [obs1,obs2], num_domain=2000, num_boundary=100, num_test=100,auxiliary_var_function=None)
 
 # Function space
 func_space = dde.data.GRF(length_scale=0.2,kernel='ExpSineSquared')
