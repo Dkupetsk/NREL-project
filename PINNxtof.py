@@ -19,7 +19,7 @@ def boundary(X, on_initial):
     return on_initial and np.isclose(X[0],0)
 
 ic1 = dde.icbc.IC(geom, lambda X: 0, boundary, component = 0)
-#ic2 = dde.icbc.IC(geom, lambda X: 0, boundary, component = 1)
+ic2 = dde.icbc.IC(geom, lambda X: 0, boundary, component = 1)
 #icn = dde.icbc.IC(geom, lambda X: 0, boundary, component = 0)
 #return here if issues
 
@@ -73,7 +73,7 @@ bc = dde.icbc.NeumannBC(geom, lambda X: getvel(X), bound, component=0)
 data = dde.data.TimePDE(
     geom,
     ode_system,
-    [ic1,obs1,obs2,bc],
+    [obs1,obs2],
     num_domain = 400,
     num_boundary = 100,
 )
@@ -84,16 +84,16 @@ data = dde.data.TimePDE(
 net = dde.nn.FNN([1] + [32]*3 + [3], 'sin', 'Glorot uniform')
 
 model = dde.Model(data,net)
-model.compile('adam', lr=1e-4)
+model.compile('adam', lr=1e-5)
 
 
-losshistory, train_state = model.train(iterations=100000)
+losshistory, train_state = model.train(iterations=30000)
 
 # %%
 
-#pred = model.predict(tpoints)[:,0]
-#plt.plot(t,pred,'r')
-#plt.plot(t,xpoints*xmax,'k')
+pred = model.predict(tpoints)[:,0]
+plt.plot(t,pred,'r')
+plt.plot(t,xpoints*xmax,'k')
 #%%
 pred = model.predict(tpoints)[:,2]
 plt.plot(tpoints,pred,'r')
